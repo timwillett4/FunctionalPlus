@@ -277,18 +277,71 @@ result<OK, Error> join_result(const result<result<OK, Error>, Error>& r)
 // Returns the error if the result is an error.
 // Otherwise return the result of applying
 // the function to the ok value of the result.
-template <typename Ok, typename Error, typename F>
+    template <typename Ok, typename Error, typename F>
 auto and_then_result(F f, const result<Ok, Error>& r)
 {
     internal::trigger_static_asserts<internal::unary_function_tag, F, Ok>();
 
     using FOut = std::decay_t<internal::invoke_result_t<F, Ok>>;
     static_assert(std::is_same<Error, typename FOut::error_t>::value,
-                  "Error type must stay the same.");
+            "Error type must stay the same.");
     if (is_ok(r))
         return internal::invoke(f, unsafe_get_ok(r));
     else
         return error<typename FOut::ok_t, typename FOut::error_t>(r.unsafe_get_error());
+}
+
+// @TODO - add tests then commit/submit PR
+
+// API search type: and_then_result : ((a -> b -> Result c d) -> (Result a d) -> (Result b d) -> Result c b
+// fwd bind count: 2
+// Monadic bind for binary functions.
+// Returns the error if any result is an error.
+// Otherwise return the result of applying
+// the function to the ok values of the result.
+    template <typename Ok1, typename Ok2, typename Error, typename F>
+auto and_then_result2(F f, const result<Ok1, Error>& r1, const result<Ok2, Error>& r2)
+{
+
+    internal::trigger_static_asserts<internal::binary_function_tag, F, Ok1, Ok2>();
+
+    using FOut = std::decay_t<internal::invoke_result_t<F, Ok1, Ok2>>;
+
+    static_assert(std::is_same<Error, typename FOut::error_t>::value,
+            "Error type must stay the same.");
+
+    if (is_ok(r1) && is_ok(r2))
+        return internal::invoke(f, unsafe_get_ok(r1), unsafe_get_ok(r2));
+    else if(is_error(r1))
+        return error<typename FOut::ok_t, typename FOut::error_t>(r1.unsafe_get_error());
+    else
+        return error<typename FOut::ok_t, typename FOut::error_t>(r2.unsafe_get_error());
+}
+
+// API search type: and_then_result : ((a -> b -> c -> Result d e) -> (Result a e) -> (Result b e) -> (Result c e) -> Result d e
+// fwd bind count: 3
+// Monadic bind for ternary functions.
+// Returns the error if any result is an error.
+// Otherwise return the result of applying
+// the function to the ok values of the result.
+    template <typename Ok1, typename Ok2, typename Ok3, typename Error, typename F>
+auto and_then_result3(F f, const result<Ok1, Error>& r1, const result<Ok2, Error>& r2, const result<Ok3, Error>& r3)
+{
+    internal::trigger_static_asserts<internal::ternary_function_tag, F, Ok1, Ok2, Ok3>();
+
+    using FOut = std::decay_t<internal::invoke_result_t<F, Ok1, Ok2, Ok3>>;
+
+    static_assert(std::is_same<Error, typename FOut::error_t>::value,
+                  "Error type must stay the same.");
+
+    if (is_ok(r1) && is_ok(r2) && is_ok(r3))
+        return internal::invoke(f, unsafe_get_ok(r1), unsafe_get_ok(r2), unsafe_get_ok(r3));
+    else if(is_error(r1))
+        return error<typename FOut::ok_t, typename FOut::error_t>(r1.unsafe_get_error());
+    else if(is_error(r2))
+        return error<typename FOut::ok_t, typename FOut::error_t>(r2.unsafe_get_error());
+    else
+        return error<typename FOut::ok_t, typename FOut::error_t>(r3.unsafe_get_error());
 }
 
 // API search type: compose_result : ((a -> Result b c), (b -> Result d c)) -> (a -> Result d c)

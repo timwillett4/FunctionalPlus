@@ -25,6 +25,10 @@ struct binary_function_tag
 {
 };
 
+struct ternary_function_tag
+{
+};
+
 struct binary_predicate_tag
 {
 };
@@ -81,6 +85,32 @@ struct function_traits_asserts<binary_predicate_tag, F>
                   "Both parameters must have the same type.");
     static_assert(std::is_same<std::decay_t<internal::invoke_result_t<F, FIn0, FIn1>>, bool>::value,
                 "Predicate must return bool.");
+};
+
+template <typename F>
+struct function_traits_asserts<ternary_function_tag, F>
+{
+    static_assert(utils::function_traits<F>::arity == 3,
+        "Function must take three parameters.");
+};
+
+template <typename F, typename X, typename Y, typename Z>
+struct function_traits_asserts<ternary_function_tag, F, X , Y, Z>
+{
+    static_assert(utils::function_traits<F>::arity == 3,
+        "Function must take three parameters.");
+
+    typedef typename utils::function_traits<F>::template arg<0>::type FIn0;
+    static_assert(std::is_convertible<X, FIn0>::value,
+                  "Invalid first argument type for function");
+
+    typedef typename utils::function_traits<F>::template arg<1>::type FIn1;
+    static_assert(std::is_convertible<Y, FIn1>::value,
+                  "Invalid second argument type for function");
+
+    typedef typename utils::function_traits<F>::template arg<2>::type FIn2;
+    static_assert(std::is_convertible<Z, FIn2>::value,
+                  "Invalid third argument type for function");
 };
 
 template <typename F, typename... Args>
